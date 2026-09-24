@@ -1,0 +1,130 @@
+/* Digital Parchi Custom Styles */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  --primary: #059669;
+  --primary-dark: #047857;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
+}
+
+.font-mono-receipt {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Parchi / Paper Slip Aesthetic */
+.parchi-paper {
+  background: #ffffff;
+  position: relative;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+}
+
+.parchi-paper::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, #059669 0%, #10b981 50%, #f59e0b 100%);
+  border-radius: 8px 8px 0 0;
+}
+
+/* Zigzag Sawtooth Edge for Parchi Slip */
+.sawtooth-bottom {
+  position: relative;
+}
+.sawtooth-bottom::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  background: radial-gradient(circle, transparent, transparent 50%, #ffffff 50%, #ffffff 100%);
+  background-size: 16px 16px;
+}
+
+/* Checklist Strike-through Animation */
+.item-checkbox:checked + span {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+/* Pulse animation for new pending orders */
+@keyframes softPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.9;
+  }
+}
+
+.pulse-badge {
+  animation: softPulse 2s infinite ease-in-out;
+}
+
+/* Print Specific Rules */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  #printable-receipt-modal,
+  #printable-parchi-content,
+  #printable-parchi-content * {
+    visibility: visible;
+  }
+
+  #printable-receipt-modal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  #printable-parchi-content {
+    position: absolute;
+    left: 50%;
+    top: 20px;
+    transform: translateX(-50%);
+    width: 80mm !important; /* Standard thermal receipt paper width */
+    max-width: 100%;
+    padding: 10px;
+    border: 1px dashed #475569;
+    box-shadow: none !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

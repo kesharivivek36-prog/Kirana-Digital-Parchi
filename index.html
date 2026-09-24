@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Parchi (डिजिटल पर्ची) | Grocery Store Order & Dashboard</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            kirana: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b'
+            },
+            saffron: {
+              500: '#f59e0b',
+              600: '#d97706'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased">
+
+  <!-- ================= TOP APP HEADER ================= -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo & Store Info -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+            <i data-lucide="receipt-text" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="text-lg font-bold text-slate-900 tracking-tight">Digital Parchi</h1>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 hidden sm:inline-block">डिजिटल पर्ची</span>
+            </div>
+            <p class="text-xs text-slate-500 font-medium">Sharma Kirana & General Store</p>
+          </div>
+        </div>
+
+        <!-- Interface Navigation Switcher -->
+        <nav class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <button id="nav-customer-btn" onclick="switchView('customer')" class="flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 bg-white text-emerald-700 shadow-sm">
+            <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+            <span>Customer Order</span>
+          </button>
+          
+          <button id="nav-dashboard-btn" onclick="switchView('dashboard')" class="flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-900">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span>Shopkeeper Dashboard</span>
+            <span id="nav-pending-badge" class="ml-1.5 px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-white pulse-badge hidden">0</span>
+          </button>
+        </nav>
+
+        <!-- Utility Actions -->
+        <div class="hidden md:flex items-center space-x-2">
+          <button onclick="toggleSound()" id="sound-toggle-btn" class="p-2 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-slate-50 border border-slate-200 text-xs flex items-center space-x-1" title="Toggle notification sounds">
+            <i data-lucide="volume-2" class="w-4 h-4 text-emerald-600" id="sound-icon"></i>
+            <span class="font-medium text-xs">Sound</span>
+          </button>
+          <button onclick="resetDemoData()" class="px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200" title="Load sample orders for testing">
+            Reset Demo Data
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Quick Switching Notice Banner -->
+  <div class="bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white py-2 px-4 shadow-inner text-xs sm:text-sm font-medium flex items-center justify-between no-print">
+    <div class="max-w-7xl mx-auto w-full flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
+        <span id="quick-banner-text">You are on the <strong>Customer Order Page</strong>. Submit an order, then switch to the <strong>Shopkeeper Dashboard</strong> to view & process it!</span>
+      </div>
+      <button id="quick-switch-btn" onclick="toggleBetweenViews()" class="underline font-bold hover:text-amber-200 transition-colors ml-4 whitespace-nowrap">
+        Switch to Dashboard &rarr;
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none no-print"></div>
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ========================================================================= -->
+    <!-- 1. CUSTOMER INTERFACE (ORDER PAGE)                                         -->
+    <!-- ========================================================================= -->
+    <section id="customer-view" class="space-y-6">
+      
+      <!-- Welcoming Hero Card -->
+      <div class="bg-gradient-to-br from-emerald-800 to-teal-900 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg">
+        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="relative z-10 max-w-2xl">
+          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-700/60 border border-emerald-500/30 text-emerald-200 text-xs font-semibold mb-3">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+            <span>Shop No. 4, Main Market, Shiv Chowk &bull; Delivery & Pickup Available</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Create Your Grocery Parchi (पर्ची)</h2>
+          <p class="mt-2 text-emerald-100 text-sm sm:text-base">
+            No need to stand in long queues! Write or paste your grocery list below like a WhatsApp message, or add items dynamically. We will pack it fresh for you.
+          </p>
+        </div>
+      </div>
+
+      <!-- Customer Order Form Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Primary Order Form -->
+        <div class="lg:col-span-8 space-y-6">
+          <form id="customer-order-form" onsubmit="handleCustomerOrderSubmit(event)" class="parchi-paper rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+            
+            <!-- Section 1: Customer Personal Details -->
+            <div>
+              <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2 mb-4">
+                <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">1</span>
+                <span>Customer Contact Information</span>
+              </h3>
+              
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label for="cust-name" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Your Full Name <span class="text-red-500">*</span>
+                  </label>
+                  <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <i data-lucide="user" class="w-4 h-4"></i>
+                    </div>
+                    <input type="text" id="cust-name" required placeholder="e.g. Ramesh Chandra" 
+                           class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium text-slate-800">
+                  </div>
+                </div>
+
+                <div>
+                  <label for="cust-phone" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Mobile Number (for SMS & WhatsApp) <span class="text-red-500">*</span>
+                  </label>
+                  <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 font-semibold text-sm">
+                      +91
+                    </div>
+                    <input type="tel" id="cust-phone" required pattern="[0-9]{10}" maxlength="10" placeholder="9876543210" 
+                           class="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium text-slate-800">
+                  </div>
+                  <p class="text-[11px] text-slate-400 mt-1">We will send you a notification when your parchi is ready.</p>
+                </div>
+              </div>
+            </div>
+
+            <hr class="border-slate-200">
+
+            <!-- Section 2: Grocery List Input (Dual Modes) -->
+            <div>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                  <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">2</span>
+                  <span>Grocery Items List (सामान की सूची)</span>
+                  <span class="text-red-500">*</span>
+                </h3>
+
+                <!-- Mode Selector Tabs -->
+                <div class="inline-flex bg-slate-100 p-1 rounded-lg border border-slate-200 self-start sm:self-auto">
+                  <button type="button" id="tab-whatsapp-mode" onclick="setGroceryInputMode('text')" 
+                          class="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-emerald-700 shadow-sm flex items-center space-x-1.5 transition-all">
+                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                    <span>WhatsApp / Free Text</span>
+                  </button>
+                  <button type="button" id="tab-builder-mode" onclick="setGroceryInputMode('builder')" 
+                          class="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center space-x-1.5 transition-all">
+                    <i data-lucide="list-plus" class="w-3.5 h-3.5"></i>
+                    <span>Dynamic Item Builder</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Mode A: WhatsApp Style Free Textarea -->
+              <div id="grocery-mode-text" class="space-y-2">
+                <div class="flex items-center justify-between text-xs text-slate-500">
+                  <span>Type or paste items one per line with quantity:</span>
+                  <button type="button" onclick="loadSampleGroceryTemplate()" class="text-emerald-600 font-semibold hover:text-emerald-700 flex items-center space-x-1 underline">
+                    <i data-lucide="wand-2" class="w-3 h-3"></i>
+                    <span>Paste Sample List</span>
+                  </button>
+                </div>
+                <textarea id="grocery-text-input" rows="7" 
+                          placeholder="Example:&#10;1. Aashirvaad Atta - 5kg&#10;2. Tata Salt - 1 packet&#10;3. Amul Butter - 100g&#10;4. Fortune Sunflower Oil - 1 litre&#10;5. Maggi - 4 packets"
+                          class="w-full p-3.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono-receipt focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all leading-relaxed"></textarea>
+                <div class="flex justify-between items-center text-[11px] text-slate-400">
+                  <span>Tip: You can paste your entire WhatsApp grocery message here directly!</span>
+                  <span id="text-line-count">0 items detected</span>
+                </div>
+              </div>
+
+              <!-- Mode B: Dynamic Item Builder -->
+              <div id="grocery-mode-builder" class="space-y-4 hidden">
+                <div class="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-4">
+                  <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <div class="sm:col-span-6">
+                      <label for="builder-item-name" class="block text-xs font-bold text-slate-700 mb-1">Item Name (सामान)</label>
+                      <input type="text" id="builder-item-name" placeholder="e.g. Sugar, Toor Dal, Soap" 
+                             class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                             onkeydown="if(event.key === 'Enter') { event.preventDefault(); addDynamicItem(); }">
+                    </div>
+                    <div class="sm:col-span-4">
+                      <label for="builder-item-qty" class="block text-xs font-bold text-slate-700 mb-1">Quantity (मात्रा)</label>
+                      <input type="text" id="builder-item-qty" placeholder="e.g. 1 kg, 500g, 2 pkts" 
+                             class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                             onkeydown="if(event.key === 'Enter') { event.preventDefault(); addDynamicItem(); }">
+                    </div>
+                    <div class="sm:col-span-2">
+                      <button type="button" onclick="addDynamicItem()" 
+                              class="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold flex items-center justify-center space-x-1 shadow-sm transition-colors">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Add</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Quick Add Item Suggestions Chips -->
+                  <div class="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+                    <span class="text-slate-400 font-medium">Quick add:</span>
+                    <button type="button" onclick="quickFillItem('Aashirvaad Atta', '5 kg')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Atta (5kg)</button>
+                    <button type="button" onclick="quickFillItem('Tata Salt', '1 pkt')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Salt (1 pkt)</button>
+                    <button type="button" onclick="quickFillItem('Madhur Sugar', '2 kg')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Sugar (2kg)</button>
+                    <button type="button" onclick="quickFillItem('Amul Milk', '2 pouches')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Milk (2 pouches)</button>
+                    <button type="button" onclick="quickFillItem('Fortune Oil', '1 Litre')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Oil (1L)</button>
+                  </div>
+                </div>
+
+                <!-- Dynamic Items Table / Container -->
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
+                  <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between text-xs font-bold text-slate-600 uppercase tracking-wider">
+                    <span>Added Items (<span id="dynamic-items-count">0</span>)</span>
+                    <button type="button" onclick="clearDynamicItems()" class="text-red-500 hover:text-red-700 font-semibold normal-case text-xs">Clear All</button>
+                  </div>
+                  <div id="dynamic-items-list" class="divide-y divide-slate-100 max-h-60 overflow-y-auto bg-white p-2">
+                    <p class="text-center text-slate-400 py-6 text-sm">No items added yet. Type an item above and click "Add".</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <hr class="border-slate-200">
+
+            <!-- Section 3: Order Fulfillment Type (Pickup vs Delivery) -->
+            <div>
+              <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2 mb-4">
+                <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">3</span>
+                <span>Select Order Type (पिकअप या डिलीवरी)</span>
+                <span class="text-red-500">*</span>
+              </h3>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <!-- Option 1: Pickup -->
+                <label class="cursor-pointer border-2 rounded-xl p-4 flex items-start space-x-3 transition-all border-emerald-500 bg-emerald-50/50" id="order-type-pickup-card">
+                  <input type="radio" name="orderType" value="pickup" checked onchange="handleOrderTypeChange('pickup')" class="mt-1 text-emerald-600 focus:ring-emerald-500">
+                  <div>
+                    <div class="flex items-center space-x-2">
+                      <i data-lucide="store" class="w-4 h-4 text-emerald-700"></i>
+                      <span class="font-bold text-slate-900 text-sm">Store Pickup (दुकान से पिकअप)</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">We will keep your bag packed. Just show your mobile number & pick it up.</p>
+                  </div>
+                </label>
+
+                <!-- Option 2: Delivery -->
+                <label class="cursor-pointer border-2 rounded-xl p-4 flex items-start space-x-3 transition-all border-slate-200 hover:border-slate-300 bg-white" id="order-type-delivery-card">
+                  <input type="radio" name="orderType" value="delivery" onchange="handleOrderTypeChange('delivery')" class="mt-1 text-emerald-600 focus:ring-emerald-500">
+                  <div>
+                    <div class="flex items-center space-x-2">
+                      <i data-lucide="truck" class="w-4 h-4 text-emerald-700"></i>
+                      <span class="font-bold text-slate-900 text-sm">Home Delivery (घर पर डिलीवरी)</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">Direct home delivery. Cash or UPI payment at doorstep upon delivery.</p>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Pickup Time Options (shown if pickup selected) -->
+              <div id="pickup-details-box" class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
+                <label for="pickup-time-select" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Select Estimated Pickup Time
+                </label>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <button type="button" onclick="selectPickupPreset('In 15 minutes')" class="pickup-preset-btn px-3 py-2 rounded-lg text-xs font-medium border border-slate-300 bg-white hover:border-emerald-500 hover:text-emerald-700 transition-all text-center">In 15 mins</button>
+                  <button type="button" onclick="selectPickupPreset('In 30 minutes')" class="pickup-preset-btn px-3 py-2 rounded-lg text-xs font-medium border border-emerald-500 bg-emerald-100/70 text-emerald-800 transition-all text-center">In 30 mins</button>
+                  <button type="button" onclick="selectPickupPreset('In 1 hour')" class="pickup-preset-btn px-3 py-2 rounded-lg text-xs font-medium border border-slate-300 bg-white hover:border-emerald-500 hover:text-emerald-700 transition-all text-center">In 1 hour</button>
+                  <button type="button" onclick="selectPickupPreset('Evening (6 PM - 8 PM)')" class="pickup-preset-btn px-3 py-2 rounded-lg text-xs font-medium border border-slate-300 bg-white hover:border-emerald-500 hover:text-emerald-700 transition-all text-center">Evening 6-8 PM</button>
+                </div>
+                <input type="text" id="cust-pickup-time" value="In 30 minutes" placeholder="Or enter specific time e.g., 7:45 PM" 
+                       class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              </div>
+
+              <!-- Delivery Address Box (shown if delivery selected) -->
+              <div id="delivery-details-box" class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3 hidden">
+                <label for="cust-delivery-address" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Complete Delivery Address <span class="text-red-500">*</span>
+                </label>
+                <textarea id="cust-delivery-address" rows="3" placeholder="House/Flat No., Building Name, Street, Landmark, Pincode" 
+                          class="w-full p-3 bg-white border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+              </div>
+            </div>
+
+            <!-- Section 4: Special Instructions / Notes -->
+            <div>
+              <label for="cust-notes" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Any Special Instructions / Notes (Optional)
+              </label>
+              <input type="text" id="cust-notes" placeholder="e.g. Please select ripe bananas, call on arrival, etc." 
+                     class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <!-- Submit Button -->
+            <div class="pt-2">
+              <button type="submit" id="btn-submit-order" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-base shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-2 transition-all transform active:scale-[0.99]">
+                <i data-lucide="send" class="w-5 h-5"></i>
+                <span>Submit Order (पर्ची भेजें)</span>
+              </button>
+              <p class="text-center text-xs text-slate-400 mt-2">
+                🔒 Your grocery list is sent directly to the Sharma Kirana store counter.
+              </p>
+            </div>
+
+          </form>
+        </div>
+
+        <!-- Right Column: Store Info & Quick Help Card -->
+        <div class="lg:col-span-4 space-y-6">
+          
+          <!-- Store Guarantee & Features -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+            <h4 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
+              <i data-lucide="badge-check" class="w-5 h-5 text-emerald-600"></i>
+              <span>Why Order with Digital Parchi?</span>
+            </h4>
+
+            <div class="space-y-3 text-xs text-slate-600">
+              <div class="flex items-start space-x-3">
+                <div class="p-1.5 rounded-lg bg-emerald-100 text-emerald-800 mt-0.5">
+                  <i data-lucide="clock" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <strong class="text-slate-800 block">Zero Waiting Time</strong>
+                  Your grocery items are pre-packed before you even reach the store.
+                </div>
+              </div>
+
+              <div class="flex items-start space-x-3">
+                <div class="p-1.5 rounded-lg bg-emerald-100 text-emerald-800 mt-0.5">
+                  <i data-lucide="bell" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <strong class="text-slate-800 block">Instant SMS / WhatsApp Alerts</strong>
+                  Get notified the moment your order is packed with the final bill amount.
+                </div>
+              </div>
+
+              <div class="flex items-start space-x-3">
+                <div class="p-1.5 rounded-lg bg-emerald-100 text-emerald-800 mt-0.5">
+                  <i data-lucide="file-check" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <strong class="text-slate-800 block">Item Check Guarantee</strong>
+                  Every item is physically verified and crossed off before handover.
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-100">
+              <div class="text-xs text-slate-500 font-medium space-y-1">
+                <p>📍 <strong>Sharma Kirana Store</strong></p>
+                <p>📞 Phone: +91 98765 43210</p>
+                <p>⏰ Timings: 7:00 AM - 10:00 PM (All 7 Days)</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Tester Switch Box -->
+          <div class="bg-amber-50 rounded-2xl p-5 border border-amber-200 text-amber-900 space-y-3">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="terminal" class="w-5 h-5 text-amber-600"></i>
+              <span class="font-bold text-sm">Testing Digital Parchi?</span>
+            </div>
+            <p class="text-xs text-amber-800 leading-relaxed">
+              Place an order using the form on the left, then click the button below to view the incoming order on the <strong>Shopkeeper Dashboard</strong> in real time!
+            </p>
+            <button onclick="switchView('dashboard')" class="w-full py-2 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors">
+              <span>Go to Shopkeeper Dashboard</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 2. SHOPKEEPER DASHBOARD INTERFACE                                          -->
+    <!-- ========================================================================= -->
+    <section id="dashboard-view" class="space-y-6 hidden">
+      
+      <!-- Top Metrics Bar -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <!-- Metric 1: Pending -->
+        <div onclick="filterOrdersByStatus('pending')" class="cursor-pointer bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-amber-400 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">New / Pending</span>
+            <span class="p-1.5 rounded-lg bg-amber-100 text-amber-700">
+              <i data-lucide="clock" class="w-4 h-4"></i>
+            </span>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="stat-pending-count" class="text-2xl font-extrabold text-amber-600">0</span>
+            <span class="text-[11px] text-amber-700 font-medium">Needs packing</span>
+          </div>
+        </div>
+
+        <!-- Metric 2: Packing -->
+        <div onclick="filterOrdersByStatus('packing')" class="cursor-pointer bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-blue-400 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Packing</span>
+            <span class="p-1.5 rounded-lg bg-blue-100 text-blue-700">
+              <i data-lucide="package" class="w-4 h-4"></i>
+            </span>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="stat-packing-count" class="text-2xl font-extrabold text-blue-600">0</span>
+            <span class="text-[11px] text-blue-700 font-medium">In progress</span>
+          </div>
+        </div>
+
+        <!-- Metric 3: Ready for Pickup -->
+        <div onclick="filterOrdersByStatus('ready')" class="cursor-pointer bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-400 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Ready for Pickup</span>
+            <span class="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+              <i data-lucide="check-circle" class="w-4 h-4"></i>
+            </span>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="stat-ready-count" class="text-2xl font-extrabold text-emerald-600">0</span>
+            <span class="text-[11px] text-emerald-700 font-medium">SMS Sent</span>
+          </div>
+        </div>
+
+        <!-- Metric 4: Completed -->
+        <div onclick="filterOrdersByStatus('completed')" class="cursor-pointer bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-slate-400 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Completed Today</span>
+            <span class="p-1.5 rounded-lg bg-slate-100 text-slate-700">
+              <i data-lucide="archive" class="w-4 h-4"></i>
+            </span>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="stat-completed-count" class="text-2xl font-extrabold text-slate-800">0</span>
+            <span class="text-[11px] text-slate-500 font-medium">Delivered / Handed</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action & Filter Bar -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        
+        <!-- Search Input -->
+        <div class="relative w-full md:w-80">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <i data-lucide="search" class="w-4 h-4"></i>
+          </div>
+          <input type="text" id="dashboard-search-input" oninput="handleSearchOrders(this.value)" placeholder="Search by name, phone or ID..." 
+                 class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium">
+        </div>
+
+        <!-- Status Filter Buttons -->
+        <div class="flex items-center space-x-1 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+          <button onclick="filterOrdersByStatus('all')" id="filter-btn-all" class="filter-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-900 text-white whitespace-nowrap">
+            All Orders (<span id="count-filter-all">0</span>)
+          </button>
+          <button onclick="filterOrdersByStatus('active')" id="filter-btn-active" class="filter-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 whitespace-nowrap">
+            Active (<span id="count-filter-active">0</span>)
+          </button>
+          <button onclick="filterOrdersByStatus('pending')" id="filter-btn-pending" class="filter-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold text-amber-700 hover:bg-amber-50 whitespace-nowrap">
+            Pending (<span id="count-filter-pending">0</span>)
+          </button>
+          <button onclick="filterOrdersByStatus('packing')" id="filter-btn-packing" class="filter-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold text-blue-700 hover:bg-blue-50 whitespace-nowrap">
+            Packing (<span id="count-filter-packing">0</span>)
+          </button>
+          <button onclick="filterOrdersByStatus('ready')" id="filter-btn-ready" class="filter-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 hover:bg-emerald-50 whitespace-nowrap">
+            Ready (<span id="count-filter-ready">0</span>)
+          </button>
+          <button onclick="filterOrdersByStatus('completed')" id="filter-btn-completed" class="filter-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+            History (<span id="count-filter-completed">0</span>)
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Orders Feed Section -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+            <span id="current-filter-heading">Active Incoming Orders</span>
+            <span id="current-orders-count-badge" class="px-2 py-0.5 text-xs rounded-full bg-slate-200 text-slate-800 font-bold">0</span>
+          </h3>
+          <span class="text-xs text-slate-400">Auto-syncs across browser tabs in real time</span>
+        </div>
+
+        <!-- Orders Grid Container -->
+        <div id="orders-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Dynamically populated via renderDashboardOrders() -->
+        </div>
+
+        <!-- Empty State (Shown when no orders match) -->
+        <div id="no-orders-empty-state" class="hidden bg-white rounded-2xl p-12 text-center border border-dashed border-slate-300">
+          <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="inbox" class="w-8 h-8"></i>
+          </div>
+          <h4 class="text-base font-bold text-slate-800">No orders found</h4>
+          <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">There are no orders matching this filter or search query right now.</p>
+          <div class="flex justify-center space-x-3">
+            <button onclick="filterOrdersByStatus('all')" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">
+              Show All Orders
+            </button>
+            <button onclick="switchView('customer')" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">
+              Create New Customer Order
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ORDER SUBMISSION SUCCESS (FOR CUSTOMER)                             -->
+  <!-- ========================================================================= -->
+  <div id="customer-success-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 text-center animate-fade-in">
+      <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+        <i data-lucide="check-check" class="w-8 h-8"></i>
+      </div>
+      
+      <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+        Order Received &bull; पर्ची दर्ज हो गई
+      </span>
+      
+      <h3 class="text-xl font-black text-slate-900 mt-2 mb-1" id="success-modal-order-id">Order #DP-1001</h3>
+      <p class="text-xs text-slate-500 mb-4" id="success-modal-customer-info">Thank you, Rajesh Kumar! Your grocery list is sent to the shopkeeper counter.</p>
+
+      <div class="bg-slate-50 rounded-xl p-4 text-left border border-slate-200 mb-4 space-y-2 text-xs">
+        <div class="flex justify-between">
+          <span class="text-slate-500">Order Type:</span>
+          <span class="font-bold text-slate-800" id="success-modal-type">Store Pickup</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500" id="success-modal-time-label">Pickup Time:</span>
+          <span class="font-bold text-slate-800" id="success-modal-time-val">In 30 mins</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Items Count:</span>
+          <span class="font-bold text-slate-800" id="success-modal-items-count">4 items</span>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <button onclick="viewSubmittedOrderInDashboard()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold flex items-center justify-center space-x-2 shadow-md transition-colors">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span>View in Shopkeeper Dashboard &rarr;</span>
+        </button>
+        <button onclick="closeCustomerSuccessModal()" class="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors">
+          Place Another Order
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: "READY FOR PICKUP" / NOTIFY CUSTOMER (FOR SHOPKEEPER)                -->
+  <!-- ========================================================================= -->
+  <div id="ready-pickup-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-fade-in space-y-4">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center space-x-2">
+          <div class="p-2 rounded-lg bg-emerald-100 text-emerald-700">
+            <i data-lucide="bell-ring" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Notify Customer: Ready for Pickup</h3>
+            <p class="text-xs text-slate-500" id="ready-modal-order-subtext">Order #DP-1001 &bull; Vivek (+91 9876543210)</p>
+          </div>
+        </div>
+        <button onclick="closeReadyModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Bill Amount Input Field -->
+      <div>
+        <label for="ready-modal-bill-input" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+          Total Bill Amount (₹) <span class="text-red-500">*</span>
+        </label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-600 font-bold text-base">
+            ₹
+          </div>
+          <input type="number" id="ready-modal-bill-input" step="any" placeholder="e.g. 485" 
+                 oninput="handleBillAmountChange(this.value)"
+                 class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-lg font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1">Typing the bill amount automatically inserts it into the pre-filled message below.</p>
+      </div>
+
+      <!-- Pre-filled SMS / WhatsApp Message (Editable) -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="ready-modal-message-text" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+            SMS / WhatsApp Notification Message (Editable)
+          </label>
+          <button type="button" onclick="regenerateReadyMessage()" class="text-[11px] text-emerald-600 font-semibold hover:underline">
+            Reset to Default
+          </button>
+        </div>
+        <textarea id="ready-modal-message-text" rows="5" 
+                  class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-sans focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed text-slate-800"></textarea>
+      </div>
+
+      <!-- Modal Action Buttons -->
+      <div class="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-end gap-2">
+        <button type="button" onclick="closeReadyModal()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors">
+          Cancel
+        </button>
+        
+        <!-- Mock Send SMS Button (requested by user) -->
+        <button type="button" onclick="executeSendSMS()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm transition-colors">
+          <i data-lucide="message-square" class="w-4 h-4"></i>
+          <span>Send SMS (Mock)</span>
+        </button>
+
+        <!-- Bonus Real WhatsApp Web link -->
+        <button type="button" onclick="executeOpenWhatsApp()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center space-x-1.5 shadow-md transition-colors">
+          <i data-lucide="send" class="w-4 h-4"></i>
+          <span>Open WhatsApp</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: PRINTABLE RECEIPT / PARCHI SLIP                                     -->
+  <!-- ========================================================================= -->
+  <div id="printable-receipt-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+      
+      <!-- Modal Top Controls (Hidden during print) -->
+      <div class="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between no-print">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="printer" class="w-4 h-4 text-emerald-400"></i>
+          <span class="font-bold text-sm">Print Digital Parchi Receipt</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="window.print()" class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center space-x-1">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>Print Now</span>
+          </button>
+          <button onclick="closePrintModal()" class="p-1 text-slate-400 hover:text-white">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable Receipt Area -->
+      <div class="p-6 overflow-y-auto flex-grow bg-slate-50 flex justify-center">
+        
+        <!-- The actual receipt card designed like a thermal Kirana slip -->
+        <div id="printable-parchi-content" class="bg-white p-6 shadow-md border border-slate-200 rounded-lg max-w-[320px] w-full font-mono-receipt text-xs text-slate-900 leading-tight">
+          
+          <!-- Store Header -->
+          <div class="text-center pb-3 border-b-2 border-dashed border-slate-400 space-y-1">
+            <h3 class="font-extrabold text-base tracking-wider uppercase">Sharma Kirana Store</h3>
+            <p class="text-[11px] text-slate-600">Shop #4, Main Chowk, Sector 12</p>
+            <p class="text-[10px] text-slate-500">Ph: 9876543210 &bull; GSTIN: 07AAAAA0000A1Z5</p>
+            <div class="text-xs font-bold pt-1 uppercase tracking-widest text-emerald-800">
+              *** DIGITAL PARCHI ***
+            </div>
+          </div>
+
+          <!-- Order Info -->
+          <div class="py-2.5 border-b border-dashed border-slate-300 space-y-1 text-[11px]">
+            <div class="flex justify-between font-bold">
+              <span>Order No:</span>
+              <span id="print-order-id">DP-1001</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Date & Time:</span>
+              <span id="print-order-date">24-09-2026, 07:15 PM</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Customer:</span>
+              <span id="print-customer-name" class="font-semibold">Rajesh Kumar</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Phone:</span>
+              <span id="print-customer-phone">+91 9876543210</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Order Type:</span>
+              <span id="print-order-type" class="uppercase font-bold">PICKUP</span>
+            </div>
+            <div id="print-order-location-row" class="pt-0.5 text-slate-600 text-[10px]">
+              <span id="print-order-location">Slot: In 30 mins</span>
+            </div>
+          </div>
+
+          <!-- Items Checklist Table -->
+          <div class="py-3 border-b-2 border-dashed border-slate-400">
+            <div class="flex justify-between font-bold pb-1 text-[10px] uppercase border-b border-slate-200 mb-1">
+              <span>Item Description</span>
+              <span>Qty</span>
+            </div>
+            <div id="print-items-list" class="space-y-1.5 py-1">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Bill Summary -->
+          <div class="py-2.5 border-b-2 border-dashed border-slate-400 space-y-1 text-xs">
+            <div class="flex justify-between items-center text-sm font-black">
+              <span>TOTAL BILL:</span>
+              <span id="print-total-bill">₹560.00</span>
+            </div>
+            <div class="flex justify-between text-[10px] text-slate-500">
+              <span>Payment Mode:</span>
+              <span>Cash / UPI on Delivery</span>
+            </div>
+          </div>
+
+          <!-- Notes (if any) -->
+          <div id="print-notes-section" class="py-2 border-b border-dashed border-slate-300 text-[10px] text-slate-600 italic">
+            <span>Notes: </span><span id="print-notes-text">None</span>
+          </div>
+
+          <!-- Footer & QR placeholder -->
+          <div class="pt-3 text-center space-y-1">
+            <div class="text-[10px] font-bold">Pay via Any UPI App:</div>
+            <div class="inline-block p-1 bg-slate-100 border border-slate-300 rounded text-[9px] font-mono">
+              UPI: sharmakirana@upi
+            </div>
+            <p class="text-[10px] text-slate-500 pt-1 font-sans">Thank you for shopping with us! Visit again.</p>
+            <p class="text-[9px] text-slate-400">Powered by Digital Parchi</p>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Bottom action button -->
+      <div class="p-3 bg-white border-t border-slate-200 flex justify-end space-x-2 no-print">
+        <button onclick="closePrintModal()" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100">
+          Close Preview
+        </button>
+        <button onclick="window.print()" class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center space-x-1">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+          <span>Print Slip</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: SHARE ORDER DETAILS                                                -->
+  <!-- ========================================================================= -->
+  <div id="share-order-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center space-x-2">
+          <div class="p-2 rounded-lg bg-teal-100 text-teal-700">
+            <i data-lucide="share-2" class="w-5 h-5"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-900">Share Digital Parchi</h3>
+        </div>
+        <button onclick="closeShareModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Formatted Text Parchi</label>
+        <textarea id="share-parchi-text" rows="8" readonly 
+                  class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono-receipt focus:outline-none select-all"></textarea>
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-center gap-2 pt-2">
+        <button onclick="copyShareText()" class="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold flex items-center justify-center space-x-1.5 transition-colors">
+          <i data-lucide="copy" class="w-4 h-4"></i>
+          <span id="copy-share-btn-text">Copy to Clipboard</span>
+        </button>
+        <button onclick="shareViaWhatsApp()" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center space-x-1.5 transition-colors">
+          <i data-lucide="send" class="w-4 h-4"></i>
+          <span>Share to WhatsApp</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App JavaScript files -->
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

@@ -65,6 +65,84 @@ body {
   background-size: 16px 16px;
 }
 
+/* Structured Grocery Parchi List Layout */
+.parchi-sheet-container {
+  border-top: 1.5px dashed #cbd5e1;
+  border-bottom: 1.5px dashed #cbd5e1;
+  padding: 0.75rem 0.25rem;
+  background-color: #ffffff;
+  transition: border-color 0.2s ease;
+}
+
+.parchi-sheet-container:focus-within {
+  border-top-color: #10b981;
+  border-bottom-color: #10b981;
+}
+
+.parchi-item-row {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) minmax(7rem, auto);
+  column-gap: 3rem;
+  align-items: baseline;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.15s ease;
+}
+
+.parchi-item-row:hover {
+  background-color: #f8fafc;
+}
+
+.parchi-col-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.parchi-col-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1e293b;
+  text-align: left;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.parchi-col-qty {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .parchi-item-row {
+    grid-template-columns: 2rem minmax(0, 1fr) minmax(5.25rem, auto);
+    column-gap: 1.25rem;
+    padding: 0.55rem 0.35rem;
+  }
+
+  .parchi-col-num {
+    font-size: 0.85rem;
+  }
+
+  .parchi-col-name {
+    font-size: 0.9rem;
+  }
+
+  .parchi-col-qty {
+    font-size: 0.85rem;
+  }
+}
+
 /* Checklist Strike-through Animation */
 .item-checkbox:checked + span {
   text-decoration: line-through;

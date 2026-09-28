@@ -169,32 +169,222 @@ function setGroceryInputMode(mode) {
 }
 
 /**
- * In text mode: counts non-empty lines dynamically
+ * Parses a single line of grocery text into { name, quantity }
+ * Supports formats like:
+ *   "Aashirvaad Atta - 5Kg"
+ *   "1. Aashirvaad Atta - 5 Kg"
+ *   "Maggi 2-Minute Noodles - 4 packs"
+ *   "Tata Salt : 1 packet"
  */
-function initTextareaCounter() {
+function parseGroceryLine(line) {
+  let cleaned = line.replace(/^\s*(\d+[\.\)\-:]|\*|-)\s*/, '').trim();
+  if (!cleaned) {
+    return { name: '', quantity: '' };
+  }
+
+  // Prefer splitting on spaced separator (" - ", " – ", " — ", " : ") so hyphenated names like "2-Minute" stay intact
+  const spacedMatch = cleaned.match(/^(.*?)\s+[-–—:]\s+(.+)$/);
+  if (spacedMatch) {
+    return {
+      name: spacedMatch[1].trim(),
+      quantity: spacedMatch[2].trim()
+    };
+  }
+
+  // Fallback: split on the last hyphen/dash/colon
+  const lastSepMatch = cleaned.match(/^(.*?)[\s]*[-–—:][\s]*([^-–—:]+)$/);
+  if (lastSepMatch && lastSepMatch[1].trim()) {
+    return {
+      name: lastSepMatch[1].trim(),
+      quantity: lastSepMatch[2].trim()
+    };
+  }
+
+  // Fallback: detect trailing quantity (e.g. "Aashirvaad Atta 5Kg")
+  const trailingQtyMatch = cleaned.match(/^(.+?)\s+(\d+(?:\.\d+)?\s*(?:kg|g|gm|gms|gram|grams|l|ltr|litre|litres|ml|packet|packets|pkt|pkts|pack|packs|pc|pcs|piece|pieces|box|boxes|pouch|pouches|bottle|bottles|dozen|unit|units))$/i);
+  if (trailingQtyMatch) {
+    return {
+      name: trailingQtyMatch[1].trim(),
+      quantity: trailingQtyMatch[2].trim()
+    };
+  }
+
+  return {
+    name: cleaned,
+    quantity: '1 unit'
+  };
+}
+
+/**
+ * Renders the structured 3-column grocery parchi from #grocery-text-input
+ */
+function renderStructuredParchiFromTextarea() {
   const textarea = document.getElementById('grocery-text-input');
+  const rowsContainer = document.getElementById('parchi-items-rows');
   const countLabel = document.getElementById('text-line-count');
-  if (textarea && countLabel) {
-    textarea.addEventListener('input', () => {
-      const lines = textarea.value.split('\n').filter(l => l.trim().length > 0);
-      countLabel.textContent = `${lines.length} item${lines.length === 1 ? '' : 's'} detected`;
-    });
+  const nextNumLabel = document.getElementById('parchi-next-num');
+
+  if (!textarea || !rowsContainer) return;
+
+  const lines = textarea.value
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0);
+
+  if (countLabel) {
+    countLabel.textContent = `${lines.length} item${lines.length === 1 ? '' : 's'} detected`;
+  }
+  if (nextNumLabel) {
+    nextNumLabel.textContent = `${lines.length + 1}.`;
+  }
+
+  if (lines.length === 0) {
+    rowsContainer.innerHTML = `
+      <div class="py-6 text-center text-slate-400 text-sm">
+        Your parchi is empty. Type an item below or paste your grocery list.
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  lines.forEach((line, idx) => {
+    const parsed = parseGroceryLine(line);
+    html += `
+      <div class="parchi-item-row cursor-pointer" onclick="toggleRawParchiEditor()" title="Click to edit grocery parchi">
+        <span class="parchi-col-num">${idx + 1}.</span>
+        <span class="parchi-col-name">${escapeHtml(parsed.name)}</span>
+        <span class="parchi-col-qty">${escapeHtml(parsed.quantity)}</span>
+      </div>
+    `;
+  });
+
+  rowsContainer.innerHTML = html;
+}
+
+/**
+ * Handles typing a single item or line in the bottom parchi quick input
+ */
+function handleParchiInlineKeydown(event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const input = event.target;
+    const val = input.value.trim();
+    if (!val) return;
+
+    const textarea = document.getElementById('grocery-text-input');
+    const existingLines = textarea.value
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
+
+    const parsed = parseGroceryLine(val);
+    existingLines.push(`${existingLines.length + 1}. ${parsed.name} - ${parsed.quantity}`);
+    textarea.value = existingLines.join('\n');
+    input.value = '';
+    renderStructuredParchiFromTextarea();
   }
 }
 
 /**
- * Loads a random sample grocery list for quick testing
+ * Handles pasting a single or multi-line grocery list directly into the parchi input
  */
-let sampleIdx = 0;
+function handleParchiInlinePaste(event) {
+  const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+  if (!pastedText) return;
+
+  const pastedLines = pastedText
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l.length > 0);
+
+  if (pastedLines.length >= 1) {
+    event.preventDefault();
+    const textarea = document.getElementById('grocery-text-input');
+    // If pasting multiple lines (a full grocery list), replace the parchi with the pasted list
+    if (pastedLines.length > 1) {
+      textarea.value = pastedLines.join('\n');
+      showToast(`Pasted ${pastedLines.length} grocery items into parchi!`, 'success');
+    } else {
+      const existing = textarea.value.trim();
+      textarea.value = existing ? `${existing}\n${pastedLines[0]}` : pastedLines[0];
+    }
+    event.target.value = '';
+    renderStructuredParchiFromTextarea();
+  }
+}
+
+/**
+ * Toggles the raw multi-line textarea editor for bulk editing
+ */
+function toggleRawParchiEditor() {
+  const wrap = document.getElementById('parchi-raw-editor-wrap');
+  const structured = document.getElementById('parchi-structured-container');
+  const label = document.getElementById('toggle-raw-parchi-label');
+  const textarea = document.getElementById('grocery-text-input');
+
+  if (!wrap || !structured) return;
+
+  const isHidden = wrap.classList.contains('hidden');
+  if (isHidden) {
+    wrap.classList.remove('hidden');
+    structured.classList.add('hidden');
+    if (label) label.textContent = 'View Structured Parchi';
+    if (textarea) {
+      textarea.focus();
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    }
+  } else {
+    closeRawParchiEditor();
+  }
+}
+
+function closeRawParchiEditor() {
+  const wrap = document.getElementById('parchi-raw-editor-wrap');
+  const structured = document.getElementById('parchi-structured-container');
+  const label = document.getElementById('toggle-raw-parchi-label');
+
+  if (wrap) wrap.classList.add('hidden');
+  if (structured) structured.classList.remove('hidden');
+  if (label) label.textContent = 'Edit / Paste Text';
+  renderStructuredParchiFromTextarea();
+}
+
+/**
+ * In text mode: counts non-empty lines dynamically and syncs structured parchi
+ */
+function initTextareaCounter() {
+  const textarea = document.getElementById('grocery-text-input');
+  if (textarea) {
+    textarea.addEventListener('input', () => {
+      renderStructuredParchiFromTextarea();
+    });
+
+    // When pasting multi-line grocery items into the raw textarea, immediately format and show the structured parchi
+    textarea.addEventListener('paste', () => {
+      setTimeout(() => {
+        renderStructuredParchiFromTextarea();
+        closeRawParchiEditor();
+      }, 40);
+    });
+  }
+
+  renderStructuredParchiFromTextarea();
+}
+
+/**
+ * Loads a sample grocery list for quick testing
+ */
+let sampleIdx = 1;
 function loadSampleGroceryTemplate() {
   if (typeof SAMPLE_GROCERY_TEMPLATES !== 'undefined' && SAMPLE_GROCERY_TEMPLATES.length > 0) {
     const template = SAMPLE_GROCERY_TEMPLATES[sampleIdx % SAMPLE_GROCERY_TEMPLATES.length];
     sampleIdx++;
     const textarea = document.getElementById('grocery-text-input');
     textarea.value = template;
-    const lines = template.split('\n').filter(l => l.trim().length > 0);
-    document.getElementById('text-line-count').textContent = `${lines.length} items detected`;
-    showToast('Sample grocery list pasted!', 'info');
+    closeRawParchiEditor();
+    renderStructuredParchiFromTextarea();
+    showToast('Sample grocery list loaded into parchi!', 'info');
   }
 }
 
@@ -205,7 +395,7 @@ function addDynamicItem() {
   const nameInput = document.getElementById('builder-item-name');
   const qtyInput = document.getElementById('builder-item-qty');
   const name = nameInput.value.trim();
-  const qty = qtyInput.value.trim() || '1 pc';
+  const qty = qtyInput.value.trim() || '1 unit';
 
   if (!name) {
     showToast('Please enter an item name', 'error');
@@ -256,21 +446,22 @@ function renderDynamicItemsList() {
     return;
   }
 
-  let html = '';
+  let html = '<div class="space-y-1">';
   currentDynamicItems.forEach((item, idx) => {
     html += `
-      <div class="flex items-center justify-between py-2 px-3 hover:bg-slate-50 rounded-lg group transition-colors">
-        <div class="flex items-center space-x-3">
-          <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold flex items-center justify-center">${idx + 1}</span>
-          <span class="text-sm font-semibold text-slate-800">${escapeHtml(item.name)}</span>
-          <span class="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-medium text-slate-600">${escapeHtml(item.quantity)}</span>
-        </div>
-        <button type="button" onclick="removeDynamicItem(${idx})" class="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Remove item">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
-        </button>
+      <div class="parchi-item-row group">
+        <span class="parchi-col-num">${idx + 1}.</span>
+        <span class="parchi-col-name">${escapeHtml(item.name)}</span>
+        <span class="parchi-col-qty flex items-center justify-end space-x-2">
+          <span>${escapeHtml(item.quantity)}</span>
+          <button type="button" onclick="removeDynamicItem(${idx})" class="p-1 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors" title="Remove item">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        </span>
       </div>
     `;
   });
+  html += '</div>';
 
   container.innerHTML = html;
   lucide.createIcons();
@@ -360,16 +551,11 @@ function handleCustomerOrderSubmit(event) {
     // Parse lines into item objects
     const lines = rawText.split('\n').filter(l => l.trim().length > 0);
     items = lines.map((line, idx) => {
-      // Strip leading bullets/numbers like "1. ", "1) ", "- ", "* "
-      let cleaned = line.replace(/^\s*(\d+[\.\)\-:]|\*|-)\s*/, '').trim();
-      let parts = cleaned.split(/[-–—:]/);
-      let itemName = parts[0]?.trim() || cleaned;
-      let qty = parts.length > 1 ? parts.slice(1).join(' ').trim() : '1 unit';
-
+      const parsed = parseGroceryLine(line);
       return {
         id: `item-${Date.now()}-${idx}`,
-        name: itemName,
-        quantity: qty,
+        name: parsed.name,
+        quantity: parsed.quantity,
         packed: false
       };
     });
@@ -424,7 +610,7 @@ function resetCustomerForm() {
   document.getElementById('cust-phone').value = '';
   document.getElementById('grocery-text-input').value = '';
   document.getElementById('cust-notes').value = '';
-  document.getElementById('text-line-count').textContent = '0 items detected';
+  renderStructuredParchiFromTextarea();
   currentDynamicItems = [];
   renderDynamicItemsList();
 }

@@ -3,6 +3,7 @@
  */
 
 const SAMPLE_GROCERY_TEMPLATES = [
+  "1. Aashirvaad Atta - 5 Kg\n2. Tata Salt - 1 Packet\n3. Amul Butter - 100 g\n4. Fortune Sunflower Oil - 1 Litre\n5. Maggi - 4 Packets",
   "1. Aashirvaad Shudh Chakki Atta - 5kg\n2. Tata Salt - 1 packet (1kg)\n3. Fortune Sunlite Sunflower Oil - 1 Litre pouch\n4. Amul Taaza Milk - 2 packets (500ml)\n5. Maggi 2-Minute Noodles - 4 packs\n6. Tata Tea Premium - 250g\n7. Surf Excel Easy Wash Detergent - 1kg",
   "1. Basmati Rice (Daawat) - 2kg\n2. Toor Dal (Desi) - 1kg\n3. Chana Dal - 500g\n4. MDH Garam Masala - 1 small box\n5. Dettol Handwash Refill - 1 pouch\n6. Vim Dishwash Bar - 2 pcs",
   "1. Sugar (Madhur) - 3kg\n2. Amul Butter - 100g\n3. Britannia Good Day Cookies - 2 packs\n4. Kissan Fresh Tomato Ketchup - 500g\n5. Haldiram Bhujia - 400g"

@@ -196,21 +196,58 @@
                 </div>
               </div>
 
-              <!-- Mode A: WhatsApp Style Free Textarea -->
-              <div id="grocery-mode-text" class="space-y-2">
+              <!-- Mode A: Structured Grocery Parchi (WhatsApp / Free Text) -->
+              <div id="grocery-mode-text" class="space-y-2.5">
                 <div class="flex items-center justify-between text-xs text-slate-500">
                   <span>Type or paste items one per line with quantity:</span>
-                  <button type="button" onclick="loadSampleGroceryTemplate()" class="text-emerald-600 font-semibold hover:text-emerald-700 flex items-center space-x-1 underline">
-                    <i data-lucide="wand-2" class="w-3 h-3"></i>
-                    <span>Paste Sample List</span>
-                  </button>
+                  <div class="flex items-center space-x-3">
+                    <button type="button" id="toggle-raw-parchi-btn" onclick="toggleRawParchiEditor()" class="text-slate-600 font-semibold hover:text-emerald-700 flex items-center space-x-1 underline">
+                      <i data-lucide="file-edit" class="w-3 h-3"></i>
+                      <span id="toggle-raw-parchi-label">Edit / Paste Text</span>
+                    </button>
+                    <button type="button" onclick="loadSampleGroceryTemplate()" class="text-emerald-600 font-semibold hover:text-emerald-700 flex items-center space-x-1 underline">
+                      <i data-lucide="wand-2" class="w-3 h-3"></i>
+                      <span>Paste Sample List</span>
+                    </button>
+                  </div>
                 </div>
-                <textarea id="grocery-text-input" rows="7" 
-                          placeholder="Example:&#10;1. Aashirvaad Atta - 5kg&#10;2. Tata Salt - 1 packet&#10;3. Amul Butter - 100g&#10;4. Fortune Sunflower Oil - 1 litre&#10;5. Maggi - 4 packets"
-                          class="w-full p-3.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono-receipt focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all leading-relaxed"></textarea>
+
+                <!-- Structured 3-Column Grocery Parchi Presentation -->
+                <div id="parchi-structured-container" class="parchi-sheet-container">
+                  <div id="parchi-items-rows" class="space-y-1">
+                    <!-- Dynamically populated 3-column parchi rows -->
+                  </div>
+
+                  <!-- Minimal Inline Parchi Input / Multi-line Paste Row -->
+                  <div class="mt-2 pt-2 border-t border-slate-100 flex items-center gap-3 px-3">
+                    <span id="parchi-next-num" class="parchi-col-num w-10 shrink-0 text-slate-400">6.</span>
+                    <input type="text" id="parchi-inline-input"
+                           placeholder="Add item (e.g. Basmati Rice - 2 Kg) or paste full grocery list (Ctrl+V)..."
+                           class="w-full py-1.5 bg-transparent text-sm text-slate-700 placeholder-slate-400 focus:outline-none"
+                           onkeydown="handleParchiInlineKeydown(event)"
+                           onpaste="handleParchiInlinePaste(event)">
+                  </div>
+                </div>
+
+                <!-- Raw Multi-line Textarea Editor (Toggled when bulk-editing text) -->
+                <div id="parchi-raw-editor-wrap" class="hidden space-y-2">
+                  <textarea id="grocery-text-input" rows="6" 
+                            placeholder="Example:&#10;Aashirvaad Atta - 5Kg&#10;Tata Salt - 1 packet&#10;Amul Butter - 100g&#10;Fortune Sunflower Oil - 1 litre&#10;Maggi - 4 packets"
+                            class="w-full p-3.5 bg-slate-50 border border-emerald-400 rounded-xl text-sm font-mono-receipt focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all leading-relaxed">1. Aashirvaad Atta - 5 Kg
+2. Tata Salt - 1 Packet
+3. Amul Butter - 100 g
+4. Fortune Sunflower Oil - 1 Litre
+5. Maggi - 4 Packets</textarea>
+                  <div class="flex justify-end">
+                    <button type="button" onclick="closeRawParchiEditor()" class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors">
+                      Done &bull; View Parchi
+                    </button>
+                  </div>
+                </div>
+
                 <div class="flex justify-between items-center text-[11px] text-slate-400">
-                  <span>Tip: You can paste your entire WhatsApp grocery message here directly!</span>
-                  <span id="text-line-count">0 items detected</span>
+                  <span>Tip: Paste your WhatsApp grocery list directly or click any row to edit!</span>
+                  <span id="text-line-count">5 items detected</span>
                 </div>
               </div>
 
@@ -242,21 +279,21 @@
                   <!-- Quick Add Item Suggestions Chips -->
                   <div class="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
                     <span class="text-slate-400 font-medium">Quick add:</span>
-                    <button type="button" onclick="quickFillItem('Aashirvaad Atta', '5 kg')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Atta (5kg)</button>
-                    <button type="button" onclick="quickFillItem('Tata Salt', '1 pkt')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Salt (1 pkt)</button>
-                    <button type="button" onclick="quickFillItem('Madhur Sugar', '2 kg')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Sugar (2kg)</button>
-                    <button type="button" onclick="quickFillItem('Amul Milk', '2 pouches')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Milk (2 pouches)</button>
-                    <button type="button" onclick="quickFillItem('Fortune Oil', '1 Litre')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Oil (1L)</button>
+                    <button type="button" onclick="quickFillItem('Aashirvaad Atta', '5 Kg')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Atta (5Kg)</button>
+                    <button type="button" onclick="quickFillItem('Tata Salt', '1 Packet')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Salt (1 Packet)</button>
+                    <button type="button" onclick="quickFillItem('Madhur Sugar', '2 Kg')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Sugar (2Kg)</button>
+                    <button type="button" onclick="quickFillItem('Amul Milk', '2 Packets')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Milk (2 Packets)</button>
+                    <button type="button" onclick="quickFillItem('Fortune Sunflower Oil', '1 Litre')" class="px-2 py-0.5 rounded-full bg-white hover:bg-emerald-100 text-slate-700 border border-slate-200 text-[11px]">+ Oil (1 Litre)</button>
                   </div>
                 </div>
 
-                <!-- Dynamic Items Table / Container -->
-                <div class="border border-slate-200 rounded-xl overflow-hidden">
-                  <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between text-xs font-bold text-slate-600 uppercase tracking-wider">
+                <!-- Dynamic Items Structured Parchi Container -->
+                <div>
+                  <div class="px-1 py-1.5 flex items-center justify-between text-xs font-bold text-slate-600 uppercase tracking-wider">
                     <span>Added Items (<span id="dynamic-items-count">0</span>)</span>
                     <button type="button" onclick="clearDynamicItems()" class="text-red-500 hover:text-red-700 font-semibold normal-case text-xs">Clear All</button>
                   </div>
-                  <div id="dynamic-items-list" class="divide-y divide-slate-100 max-h-60 overflow-y-auto bg-white p-2">
+                  <div id="dynamic-items-list" class="parchi-sheet-container max-h-72 overflow-y-auto">
                     <p class="text-center text-slate-400 py-6 text-sm">No items added yet. Type an item above and click "Add".</p>
                   </div>
                 </div>
